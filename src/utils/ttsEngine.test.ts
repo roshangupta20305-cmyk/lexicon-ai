@@ -2,7 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   VOICES,
+  VOICE_SAMPLE_SCRIPTS,
   VoiceName,
+  getVoiceSampleText,
+  ensureWavBase64,
+  validateWavAudioDurationSec,
+  getVoiceSampleAudioDataUrl,
+  clearVoiceSampleCache,
   validateSynthesisInput,
   insertVocalMarker,
   estimateSpeechDurationSeconds,
@@ -21,30 +27,101 @@ import {
   AudioClipItem,
 } from './ttsEngine';
 
-test('VOICES catalog contains all 12 Gemini voices and all are 100% free', () => {
-  const expectedNames: VoiceName[] = [
-    'Kore',
-    'Puck',
-    'Charon',
-    'Fenrir',
-    'Zephyr',
-    'Aoede',
-    'Leda',
-    'Orus',
-    'Perseus',
-    'Callirrhoe',
-    'Autonoë',
-    'Charis',
-  ];
+test('VOICES catalog contains all 12 Gemini voices with exact "Welcome to Lexicon AI." sample scripts', () => {
+  const expectedScripts: Record<VoiceName, string> = {
+    Kore: 'Welcome to Lexicon AI. I am Kore, a composed and articulate narrator. Listen to my broadcast clarity.',
+    Puck: "Welcome to Lexicon AI. I am Puck, bright and energetic. Let's bring your words to life with warmth.",
+    Charon:
+      'Welcome to Lexicon AI. I am Charon, deep and resonant. A voice built for documentary authority.',
+    Fenrir:
+      'Welcome to Lexicon AI. I am Fenrir, bold and crisp. Dynamic storytelling starts here.',
+    Zephyr:
+      'Welcome to Lexicon AI. I am Zephyr, warm and soothing. A natural cadence for every story.',
+    Aoede:
+      'Welcome to Lexicon AI. I am Aoede, expressive and lyrical. Musical quality in every word.',
+    Leda: 'Welcome to Lexicon AI. I am Leda, gentle and nurturing. A storytelling voice you can trust.',
+    Orus: 'Welcome to Lexicon AI. I am Orus, confident and authoritative. News-style delivery, perfected.',
+    Perseus:
+      'Welcome to Lexicon AI. I am Perseus, dramatic and cinematic. Epic narration begins now.',
+    Callirrhoe:
+      'Welcome to Lexicon AI. I am Callirrhoe, emotional and poetic. Feel every word deeply.',
+    Autonoë:
+      'Welcome to Lexicon AI. I am Autonoë, calm and meditative. Peace in every syllable.',
+    Charis:
+      'Welcome to Lexicon AI. I am Charis, cheerful and friendly. Upbeat energy for your content.',
+  };
 
   assert.equal(VOICES.length, 12);
-  for (const name of expectedNames) {
+  for (const [name, expectedScript] of Object.entries(expectedScripts) as [
+    VoiceName,
+    string
+  ][]) {
     const found = VOICES.find((v) => v.name === name);
     assert.ok(found, `Missing voice ${name}`);
     assert.equal(found.free, true, `Voice ${name} must be free`);
-    assert.ok(found.register.length > 0);
-    assert.ok(found.timbre.length > 0);
+    assert.ok(found.sampleText.startsWith('Welcome to Lexicon AI.'));
+    assert.equal(found.sampleText, expectedScript);
+    assert.equal(VOICE_SAMPLE_SCRIPTS[name], expectedScript);
+    assert.equal(getVoiceSampleText(name), expectedScript);
   }
+});
+
+test('ensureWavBase64 wraps raw headerless L16 PCM into a valid 44-byte RIFF WAVE file and validateWavAudioDurationSec enforces >= 3.0s', () => {
+  // 4 seconds of raw 24kHz 16-bit mono PCM (without RIFF header) = 4 * 48000 = 192000 bytes
+  const rawPcm4Sec = Buffer.alloc(192000, 0);
+  const wrappedB64 = ensureWavBase64(rawPcm4Sec.toString('base64'));
+  const wrappedBuf = Buffer.from(wrappedB64, 'base64');
+
+  assert.equal(wrappedBuf.subarray(0, 4).toString('ascii'), 'RIFF');
+  assert.equal(wrappedBuf.subarray(8, 12).toString('ascii'), 'WAVE');
+  assert.equal(wrappedBuf.length, 44 + 192000);
+
+  const check4s = validateWavAudioDurationSec(rawPcm4Sec.toString('base64'), 3.0);
+  assert.equal(check4s.valid, true);
+  assert.equal(Math.round(check4s.durationSec), 4);
+
+  // 1.5 seconds of audio (< 3.0s minimum) must be rejected
+  const shortPcm = Buffer.alloc(72000, 0);
+  const checkShort = validateWavAudioDurationSec(shortPcm.toString('base64'), 3.0);
+  assert.equal(checkShort.valid, false);
+});
+
+test('getVoiceSampleAudioDataUrl retries once if audio is < 3s, caches valid audio, and throws if both attempts fail', async () => {
+  clearVoiceSampleCache();
+  const shortAudioB64 = Buffer.alloc(48000, 0).toString('base64'); // 1.0s (< 3.0s)
+  const validAudioB64 = Buffer.alloc(192000, 0).toString('base64'); // 4.0s (>= 3.0s)
+
+  let callCount = 0;
+  const dataUrl1 = await getVoiceSampleAudioDataUrl('Kore', undefined, async (params) => {
+    callCount++;
+    assert.equal(params.voiceName, 'Kore');
+    assert.ok(params.text.startsWith('Welcome to Lexicon AI. I am Kore'));
+    if (callCount === 1) {
+      return { audioBase64: shortAudioB64, mimeType: 'audio/L16;rate=24000' };
+    }
+    return { audioBase64: validAudioB64, mimeType: 'audio/L16;rate=24000' };
+  });
+
+  assert.equal(callCount, 2, 'Should have retried once automatically when first audio was < 3s');
+  assert.ok(dataUrl1.startsWith('data:audio/wav;base64,'));
+
+  // Second call for Kore should hit in-memory cache immediately without calling customFetchFn
+  const dataUrl2 = await getVoiceSampleAudioDataUrl('Kore', undefined, async () => {
+    callCount++;
+    return { audioBase64: validAudioB64 };
+  });
+  assert.equal(callCount, 2, 'Second click must be served from in-memory cache');
+  assert.equal(dataUrl2, dataUrl1);
+
+  // If both attempts fail, it must throw an error and NEVER return synthetic tone noise
+  await assert.rejects(
+    async () => {
+      await getVoiceSampleAudioDataUrl('Charon', undefined, async () => {
+        return { audioBase64: shortAudioB64 };
+      });
+    },
+    /under the 3\.0s minimum|Sample failed/
+  );
 });
 
 test('filterAndSortVoices filters by search, category, favorites, and pins favorites to top', () => {

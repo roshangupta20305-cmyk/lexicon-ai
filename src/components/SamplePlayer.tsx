@@ -1,11 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader2, Volume2 } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import {
   VoiceName,
-  DEFAULT_VOICE_SAMPLE_TEXT,
-  createSynthesizedToneWavDataUrl,
-  getVoiceProfile,
   getVoiceSampleAudioDataUrl,
+  getVoiceSampleText,
 } from '../utils/ttsEngine';
 
 // Singleton registry ensuring only ONE voice sample plays at a time across the entire app
@@ -26,25 +24,41 @@ interface SamplePlayerProps {
   sampleText?: string;
   compact?: boolean;
   label?: string;
-  useLiveApiWhenRequested?: boolean;
   onPlaybackChange?: (isPlaying: boolean) => void;
 }
 
 export const SamplePlayer: React.FC<SamplePlayerProps> = ({
   voiceName,
-  sampleText = DEFAULT_VOICE_SAMPLE_TEXT,
+  sampleText,
   compact = false,
-  label,
-  useLiveApiWhenRequested = true,
+  label = 'Play Sample',
   onPlaybackChange,
 }) => {
   const instanceIdRef = useRef<string>(
     `sample-${voiceName}-${Math.random().toString(36).slice(2, 8)}`
   );
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
+
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progressPct, setProgressPct] = useState(0);
+  const [toastError, setToastError] = useState<string | null>(null);
+
+  const effectiveScript =
+    sampleText && sampleText.trim().startsWith('Welcome to Lexicon AI.')
+      ? sampleText.trim()
+      : getVoiceSampleText(voiceName);
+
+  const showFailureToast = (msg = 'Sample failed. Try again.') => {
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+    setToastError(msg);
+    toastTimerRef.current = window.setTimeout(() => {
+      setToastError(null);
+    }, 4000);
+  };
 
   const stopThisPlayer = () => {
     if (audioRef.current) {
@@ -59,6 +73,9 @@ export const SamplePlayer: React.FC<SamplePlayerProps> = ({
 
   useEffect(() => {
     return () => {
+      if (toastTimerRef.current) {
+        window.clearTimeout(toastTimerRef.current);
+      }
       if (activeSampleId === instanceIdRef.current) {
         activeSampleStopCallback = null;
         activeSampleId = null;
@@ -88,18 +105,15 @@ export const SamplePlayer: React.FC<SamplePlayerProps> = ({
 
     activeSampleId = instanceIdRef.current;
     activeSampleStopCallback = stopThisPlayer;
+    setToastError(null);
     setIsLoading(true);
     setProgressPct(0);
 
     try {
-      const profile = getVoiceProfile(voiceName);
-      let audioDataUrl: string;
-
-      if (useLiveApiWhenRequested) {
-        audioDataUrl = await getVoiceSampleAudioDataUrl(voiceName, sampleText);
-      } else {
-        audioDataUrl = createSynthesizedToneWavDataUrl(3.2, profile.sampleFreq);
-      }
+      const audioDataUrl = await getVoiceSampleAudioDataUrl(
+        voiceName,
+        effectiveScript
+      );
 
       if (activeSampleId !== instanceIdRef.current) {
         return;
@@ -112,8 +126,34 @@ export const SamplePlayer: React.FC<SamplePlayerProps> = ({
       }
 
       el.src = audioDataUrl;
+      el.playbackRate = 1.0;
       el.currentTime = 0;
       el.load();
+
+      await new Promise<void>((resolve, reject) => {
+        const onLoaded = () => {
+          cleanup();
+          if (Number.isFinite(el.duration) && el.duration < 3.0) {
+            reject(new Error('Sample audio under 3 seconds.'));
+            return;
+          }
+          resolve();
+        };
+        const onErr = () => {
+          cleanup();
+          reject(new Error('Audio element failed to decode WAV sample.'));
+        };
+        const cleanup = () => {
+          el.removeEventListener('loadedmetadata', onLoaded);
+          el.removeEventListener('error', onErr);
+        };
+        el.addEventListener('loadedmetadata', onLoaded, { once: true });
+        el.addEventListener('error', onErr, { once: true });
+      });
+
+      if (activeSampleId !== instanceIdRef.current) {
+        return;
+      }
 
       setIsLoading(false);
       setIsPlaying(true);
@@ -121,39 +161,29 @@ export const SamplePlayer: React.FC<SamplePlayerProps> = ({
 
       await el.play();
     } catch {
-      // Fallback to instant acoustic WAV if initial source failed to play
-      try {
-        const profile = getVoiceProfile(voiceName);
-        const fallbackUrl = createSynthesizedToneWavDataUrl(3.2, profile.sampleFreq);
-        if (audioRef.current && activeSampleId === instanceIdRef.current) {
-          audioRef.current.src = fallbackUrl;
-          audioRef.current.currentTime = 0;
-          setIsLoading(false);
-          setIsPlaying(true);
-          onPlaybackChange?.(true);
-          await audioRef.current.play().catch(() => {
-            // Keep visual playback timer if browser autoplay policy is strict
-          });
-        }
-      } catch {
-        setIsLoading(false);
-        setIsPlaying(false);
-        onPlaybackChange?.(false);
+      stopThisPlayer();
+      if (activeSampleId === instanceIdRef.current) {
+        activeSampleId = null;
+        activeSampleStopCallback = null;
       }
+      showFailureToast('Sample failed. Try again.');
     }
   };
 
-  const buttonText = isPlaying ? 'Stop Sample' : label || 'Play Sample';
-
   return (
-    <div className="inline-flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="relative inline-flex items-center gap-2"
+      onClick={(e) => e.stopPropagation()}
+    >
       <audio
         ref={audioRef}
         preload="none"
         onTimeUpdate={(e) => {
           const d = e.currentTarget.duration;
           if (Number.isFinite(d) && d > 0) {
-            setProgressPct(Math.min(100, Math.round((e.currentTarget.currentTime / d) * 100)));
+            setProgressPct(
+              Math.min(100, Math.round((e.currentTarget.currentTime / d) * 100))
+            );
           }
         }}
         onEnded={() => {
@@ -166,22 +196,29 @@ export const SamplePlayer: React.FC<SamplePlayerProps> = ({
           }
         }}
         onError={() => {
-          setIsPlaying(false);
-          setIsLoading(false);
-          setProgressPct(0);
-          onPlaybackChange?.(false);
+          if (isPlaying || isLoading) {
+            stopThisPlayer();
+            if (activeSampleId === instanceIdRef.current) {
+              activeSampleId = null;
+              activeSampleStopCallback = null;
+            }
+            showFailureToast('Sample failed. Try again.');
+          }
         }}
       />
 
       <button
         type="button"
         onClick={handleToggleSample}
+        data-voice-sample-btn={voiceName}
+        data-sample-script={effectiveScript}
+        title={effectiveScript}
         aria-label={
           isPlaying
             ? `Stop ${voiceName} voice sample`
             : `Play ${voiceName} voice sample`
         }
-        className={`relative inline-flex items-center justify-center gap-1.5 overflow-hidden rounded-xl font-semibold transition-all duration-150 active:scale-95 whitespace-nowrap shrink-0 ${
+        className={`relative inline-flex shrink-0 items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-xl font-semibold transition-all duration-150 active:scale-95 ${
           compact ? 'px-3 py-1.5 text-xs' : 'px-3.5 py-1.5 text-xs'
         } ${
           isPlaying
@@ -205,15 +242,23 @@ export const SamplePlayer: React.FC<SamplePlayerProps> = ({
               <span>Loading...</span>
             </>
           ) : isPlaying ? (
-            <>
-              <Volume2 className="h-3.5 w-3.5 animate-pulse text-[#06B6D4]" />
-              <span>■ {buttonText}</span>
-            </>
+            <span>⏸ Stop Sample</span>
           ) : (
-            <span>▶ {buttonText}</span>
+            <span>▶ {label}</span>
           )}
         </span>
       </button>
+
+      {toastError && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="absolute bottom-full left-0 z-30 mb-2 flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#EF4444]/40 bg-[#0B0F19]/95 px-2.5 py-1.5 text-[11px] font-medium text-[#EF4444] shadow-lg backdrop-blur-md"
+        >
+          <AlertCircle className="h-3.5 w-3.5 shrink-0 text-[#EF4444]" />
+          <span>{toastError}</span>
+        </div>
+      )}
     </div>
   );
 };

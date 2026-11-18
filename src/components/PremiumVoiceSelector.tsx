@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Check, Mic, Search, Star } from 'lucide-react';
 import {
-  DEFAULT_VOICE_SAMPLE_TEXT,
   VOICES,
   VoiceCategory,
   VoiceName,
@@ -219,7 +218,7 @@ export const PremiumVoiceSelector: React.FC<PremiumVoiceSelectorProps> = ({
                 <div className="mt-4 flex items-center justify-between gap-2 border-t border-white/10 pt-3">
                   <SamplePlayer
                     voiceName={voice.name}
-                    sampleText={DEFAULT_VOICE_SAMPLE_TEXT}
+                    sampleText={voice.sampleText}
                     label="Play Sample"
                   />
 

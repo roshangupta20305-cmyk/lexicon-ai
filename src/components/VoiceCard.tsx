@@ -92,7 +92,10 @@ export const VoiceCard: React.FC<VoiceCardProps> = ({
       {/* Bottom Action Bar: Play Sample, Compare, Select */}
       <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
-          <SamplePlayer voiceName={voice.name} sampleText={sampleText} />
+          <SamplePlayer
+            voiceName={voice.name}
+            sampleText={sampleText || voice.sampleText}
+          />
 
           <button
             type="button"

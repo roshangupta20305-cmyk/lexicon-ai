@@ -20,8 +20,36 @@ export const LARGE_TEXT_WARNING_CHARS = 50000;
 export const RESUME_STORAGE_KEY = 'lexicon_ai_resume_checkpoint_v3';
 export const FAVORITE_VOICES_STORAGE_KEY = 'lexicon_ai_favorite_voices_v3';
 export const RECENT_VOICES_STORAGE_KEY = 'lexicon_ai_recent_voices_v3';
-export const DEFAULT_VOICE_SAMPLE_TEXT =
-  'Hello, this is a sample of my voice. I am ready to narrate your content.';
+export const VOICE_SAMPLE_SCRIPTS: Record<VoiceName, string> = {
+  Kore: 'Welcome to Lexicon AI. I am Kore, a composed and articulate narrator. Listen to my broadcast clarity.',
+  Puck: "Welcome to Lexicon AI. I am Puck, bright and energetic. Let's bring your words to life with warmth.",
+  Charon:
+    'Welcome to Lexicon AI. I am Charon, deep and resonant. A voice built for documentary authority.',
+  Fenrir:
+    'Welcome to Lexicon AI. I am Fenrir, bold and crisp. Dynamic storytelling starts here.',
+  Zephyr:
+    'Welcome to Lexicon AI. I am Zephyr, warm and soothing. A natural cadence for every story.',
+  Aoede:
+    'Welcome to Lexicon AI. I am Aoede, expressive and lyrical. Musical quality in every word.',
+  Leda: 'Welcome to Lexicon AI. I am Leda, gentle and nurturing. A storytelling voice you can trust.',
+  Orus: 'Welcome to Lexicon AI. I am Orus, confident and authoritative. News-style delivery, perfected.',
+  Perseus:
+    'Welcome to Lexicon AI. I am Perseus, dramatic and cinematic. Epic narration begins now.',
+  Callirrhoe:
+    'Welcome to Lexicon AI. I am Callirrhoe, emotional and poetic. Feel every word deeply.',
+  Autonoë:
+    'Welcome to Lexicon AI. I am Autonoë, calm and meditative. Peace in every syllable.',
+  Charis:
+    'Welcome to Lexicon AI. I am Charis, cheerful and friendly. Upbeat energy for your content.',
+};
+
+export const DEFAULT_VOICE_SAMPLE_TEXT = VOICE_SAMPLE_SCRIPTS.Kore;
+
+export function getVoiceSampleText(voiceName: VoiceName | string): string {
+  return (
+    VOICE_SAMPLE_SCRIPTS[voiceName as VoiceName] ?? VOICE_SAMPLE_SCRIPTS.Kore
+  );
+}
 
 export function clearLegacyDemoStorage(): void {
   try {
@@ -61,6 +89,7 @@ export interface VoiceProfile {
   sampleFreq: number;
   iconSymbol: string;
   free: boolean;
+  sampleText: string;
 }
 
 export interface BotPersona {
@@ -157,6 +186,7 @@ export const VOICES: VoiceProfile[] = [
     sampleFreq: 261.63,
     iconSymbol: '🎵',
     free: true,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Kore,
   },
   {
     name: 'Puck',
@@ -168,6 +198,7 @@ export const VOICES: VoiceProfile[] = [
     sampleFreq: 293.66,
     iconSymbol: '🎤',
     free: true,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Puck,
   },
   {
     name: 'Charon',
@@ -179,6 +210,7 @@ export const VOICES: VoiceProfile[] = [
     sampleFreq: 220.0,
     iconSymbol: '🎙️',
     free: true,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Charon,
   },
   {
     name: 'Fenrir',
@@ -190,6 +222,7 @@ export const VOICES: VoiceProfile[] = [
     sampleFreq: 196.0,
     iconSymbol: '🔊',
     free: true,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Fenrir,
   },
   {
     name: 'Zephyr',
@@ -201,6 +234,7 @@ export const VOICES: VoiceProfile[] = [
     sampleFreq: 246.94,
     iconSymbol: '🎶',
     free: true,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Zephyr,
   },
   {
     name: 'Aoede',
@@ -212,6 +246,7 @@ export const VOICES: VoiceProfile[] = [
     sampleFreq: 329.63,
     iconSymbol: '🎵',
     free: true,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Aoede,
   },
   {
     name: 'Leda',
@@ -223,6 +258,7 @@ export const VOICES: VoiceProfile[] = [
     sampleFreq: 233.08,
     iconSymbol: '🎶',
     free: true,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Leda,
   },
   {
     name: 'Orus',
@@ -234,6 +270,7 @@ export const VOICES: VoiceProfile[] = [
     sampleFreq: 277.18,
     iconSymbol: '🎤',
     free: true,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Orus,
   },
   {
     name: 'Perseus',
@@ -245,6 +282,7 @@ export const VOICES: VoiceProfile[] = [
     sampleFreq: 207.65,
     iconSymbol: '🎙️',
     free: true,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Perseus,
   },
   {
     name: 'Callirrhoe',
@@ -256,6 +294,7 @@ export const VOICES: VoiceProfile[] = [
     sampleFreq: 311.13,
     iconSymbol: '🎵',
     free: true,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Callirrhoe,
   },
   {
     name: 'Autonoë',
@@ -267,6 +306,7 @@ export const VOICES: VoiceProfile[] = [
     sampleFreq: 240.0,
     iconSymbol: '🎶',
     free: true,
+    sampleText: VOICE_SAMPLE_SCRIPTS['Autonoë'],
   },
   {
     name: 'Charis',
@@ -278,6 +318,7 @@ export const VOICES: VoiceProfile[] = [
     sampleFreq: 349.23,
     iconSymbol: '🎵',
     free: true,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Charis,
   },
 ];
 
@@ -670,9 +711,28 @@ export function smartChunkText(
   return chunks;
 }
 
+export function isRiffWaveBytes(bytes: Uint8Array): boolean {
+  return (
+    bytes.length > 44 &&
+    bytes[0] === 0x52 && // 'R'
+    bytes[1] === 0x49 && // 'I'
+    bytes[2] === 0x46 && // 'F'
+    bytes[3] === 0x46 && // 'F'
+    bytes[8] === 0x57 && // 'W'
+    bytes[9] === 0x41 && // 'A'
+    bytes[10] === 0x56 && // 'V'
+    bytes[11] === 0x45 // 'E'
+  );
+}
+
 export function extractPcmFromWavBytes(wavBytes: Uint8Array): Uint8Array {
-  if (wavBytes.length <= 44) {
+  if (wavBytes.length === 0) {
     return new Uint8Array(0);
+  }
+  if (!isRiffWaveBytes(wavBytes)) {
+    return wavBytes.length % 2 === 0
+      ? wavBytes
+      : wavBytes.subarray(0, wavBytes.length - 1);
   }
   const limit = Math.min(wavBytes.length - 8, 256);
   for (let i = 12; i <= limit; i++) {
@@ -716,11 +776,81 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+export function ensureWavBase64(base64Audio: string, sampleRate = 24000): string {
+  const rawBytes = base64ToUint8Array(base64Audio);
+  if (isRiffWaveBytes(rawBytes)) {
+    return base64Audio.includes(',') ? base64Audio.split(',')[1] : base64Audio;
+  }
+
+  const pcmBytes =
+    rawBytes.length % 2 === 0
+      ? rawBytes
+      : rawBytes.subarray(0, rawBytes.length - 1);
+  const totalPcmBytes = pcmBytes.byteLength;
+  const outputBuffer = new ArrayBuffer(44 + totalPcmBytes);
+  const view = new DataView(outputBuffer);
+  const outBytes = new Uint8Array(outputBuffer);
+
+  const writeStr = (offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
+  };
+
+  writeStr(0, 'RIFF');
+  view.setUint32(4, 36 + totalPcmBytes, true);
+  writeStr(8, 'WAVE');
+  writeStr(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeStr(36, 'data');
+  view.setUint32(40, totalPcmBytes, true);
+
+  outBytes.set(pcmBytes, 44);
+  return uint8ArrayToBase64(outBytes);
+}
+
+export function validateWavAudioDurationSec(
+  base64OrDataUrl: string,
+  minDurationSec = 3.0
+): { valid: boolean; durationSec: number; normalizedBase64: string } {
+  if (!base64OrDataUrl || !base64OrDataUrl.trim()) {
+    return { valid: false, durationSec: 0, normalizedBase64: '' };
+  }
+  try {
+    const normalizedBase64 = ensureWavBase64(base64OrDataUrl);
+    const wavBytes = base64ToUint8Array(normalizedBase64);
+    if (!isRiffWaveBytes(wavBytes) || wavBytes.length <= 44) {
+      return { valid: false, durationSec: 0, normalizedBase64: '' };
+    }
+    const view = new DataView(
+      wavBytes.buffer,
+      wavBytes.byteOffset,
+      wavBytes.byteLength
+    );
+    const byteRate = view.getUint32(28, true) || 48000;
+    const pcmBytes = extractPcmFromWavBytes(wavBytes);
+    const durationSec = pcmBytes.byteLength / byteRate;
+    return {
+      valid: durationSec >= minDurationSec,
+      durationSec,
+      normalizedBase64,
+    };
+  } catch {
+    return { valid: false, durationSec: 0, normalizedBase64: '' };
+  }
+}
+
 export function mergeWavBase64Chunks(base64Chunks: string[]): string {
   const valid = base64Chunks.filter((c) => c && c.trim().length > 0);
   if (valid.length === 0) return '';
   if (valid.length === 1) {
-    return valid[0].includes(',') ? valid[0].split(',')[1] : valid[0];
+    return ensureWavBase64(valid[0]);
   }
 
   const pcmParts: Uint8Array[] = [];
@@ -1214,48 +1344,92 @@ export function createSynthesizedToneWavDataUrl(
 // In-memory cache of synthesized voice sample audio data URLs
 const voiceSampleCache = new Map<string, string>();
 
+export function clearVoiceSampleCache(): void {
+  voiceSampleCache.clear();
+}
+
 /**
- * Generates or fetches a short audio sample for any of the 12 Gemini voices.
+ * Generates or fetches a clear, full-sentence audio sample (>= 3 seconds) for any of the 12 Gemini voices.
+ * Automatically retries once if the TTS call fails or returns < 3 seconds of audio.
+ * Never falls back to synthetic tone noise.
  */
 export async function getVoiceSampleAudioDataUrl(
   voiceName: VoiceName,
-  sampleText: string = DEFAULT_VOICE_SAMPLE_TEXT
+  sampleText?: string,
+  customFetchFn?: (params: {
+    text: string;
+    voiceName: VoiceName;
+    style: string;
+  }) => Promise<{ audioBase64: string; mimeType?: string }>
 ): Promise<string> {
-  const cacheKey = `${voiceName}::${sampleText.trim()}`;
+  const profile = getVoiceProfile(voiceName);
+  const effectiveScript =
+    sampleText && sampleText.trim().startsWith('Welcome to Lexicon AI.')
+      ? sampleText.trim()
+      : getVoiceSampleText(profile.name);
+
+  const cacheKey = `${profile.name}::${effectiveScript}`;
   const cached = voiceSampleCache.get(cacheKey);
   if (cached) return cached;
 
-  const profile = getVoiceProfile(voiceName);
+  const maxAttempts = 2; // Initial attempt + 1 automatic retry if under 3 seconds or failed
+  let lastErr: unknown = null;
 
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4500);
-    const response = await fetch('/api/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        mode: 'single',
-        text: sampleText.trim() || DEFAULT_VOICE_SAMPLE_TEXT,
-        voiceName: profile.name,
-        style: profile.defaultStyle,
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      let rawAudioBase64 = '';
 
-    if (response.ok) {
-      const data = await response.json();
-      if (data?.audioBase64) {
-        const dataUrl = `data:${data.mimeType || 'audio/wav'};base64,${data.audioBase64}`;
-        voiceSampleCache.set(cacheKey, dataUrl);
-        return dataUrl;
+      if (customFetchFn) {
+        const res = await customFetchFn({
+          text: effectiveScript,
+          voiceName: profile.name,
+          style: profile.defaultStyle,
+        });
+        rawAudioBase64 = res.audioBase64;
+      } else {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 25000);
+        try {
+          const response = await fetch('/api/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              mode: 'single',
+              text: effectiveScript,
+              voiceName: profile.name,
+              style: profile.defaultStyle,
+            }),
+            signal: controller.signal,
+          });
+
+          const data = await response.json();
+          if (!response.ok || !data?.audioBase64) {
+            throw new Error(data?.error || 'Sample failed. Try again.');
+          }
+          rawAudioBase64 = data.audioBase64;
+        } finally {
+          clearTimeout(timeoutId);
+        }
       }
+
+      const validation = validateWavAudioDurationSec(rawAudioBase64, 3.0);
+      if (!validation.valid) {
+        throw new Error(
+          `Sample audio duration (${validation.durationSec.toFixed(
+            2
+          )}s) is under the 3.0s minimum.`
+        );
+      }
+
+      const dataUrl = `data:audio/wav;base64,${validation.normalizedBase64}`;
+      voiceSampleCache.set(cacheKey, dataUrl);
+      return dataUrl;
+    } catch (err: unknown) {
+      lastErr = err;
     }
-  } catch {
-    // Fall back to deterministic acoustic sample below if API is slow or offline
   }
 
-  const fallbackWav = createSynthesizedToneWavDataUrl(3.2, profile.sampleFreq);
-  voiceSampleCache.set(cacheKey, fallbackWav);
-  return fallbackWav;
+  throw lastErr instanceof Error
+    ? lastErr
+    : new Error('Sample failed. Try again.');
 }

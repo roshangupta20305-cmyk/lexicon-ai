@@ -26,8 +26,30 @@ export interface ServerVoiceInfo {
   sampleText: string;
 }
 
-const DEFAULT_SAMPLE_TEXT =
-  'Hello, this is a sample of my voice. I am ready to narrate your content.';
+export const VOICE_SAMPLE_SCRIPTS: Record<string, string> = {
+  Kore: 'Welcome to Lexicon AI. I am Kore, a composed and articulate narrator. Listen to my broadcast clarity.',
+  Puck: "Welcome to Lexicon AI. I am Puck, bright and energetic. Let's bring your words to life with warmth.",
+  Charon:
+    'Welcome to Lexicon AI. I am Charon, deep and resonant. A voice built for documentary authority.',
+  Fenrir:
+    'Welcome to Lexicon AI. I am Fenrir, bold and crisp. Dynamic storytelling starts here.',
+  Zephyr:
+    'Welcome to Lexicon AI. I am Zephyr, warm and soothing. A natural cadence for every story.',
+  Aoede:
+    'Welcome to Lexicon AI. I am Aoede, expressive and lyrical. Musical quality in every word.',
+  Leda: 'Welcome to Lexicon AI. I am Leda, gentle and nurturing. A storytelling voice you can trust.',
+  Orus: 'Welcome to Lexicon AI. I am Orus, confident and authoritative. News-style delivery, perfected.',
+  Perseus:
+    'Welcome to Lexicon AI. I am Perseus, dramatic and cinematic. Epic narration begins now.',
+  Callirrhoe:
+    'Welcome to Lexicon AI. I am Callirrhoe, emotional and poetic. Feel every word deeply.',
+  Autonoë:
+    'Welcome to Lexicon AI. I am Autonoë, calm and meditative. Peace in every syllable.',
+  Charis:
+    'Welcome to Lexicon AI. I am Charis, cheerful and friendly. Upbeat energy for your content.',
+};
+
+const DEFAULT_SAMPLE_TEXT = VOICE_SAMPLE_SCRIPTS.Kore;
 
 const ALL_GEMINI_VOICES: ServerVoiceInfo[] = [
   {
@@ -40,7 +62,7 @@ const ALL_GEMINI_VOICES: ServerVoiceInfo[] = [
     sampleFreq: 261.63,
     iconSymbol: '🎵',
     free: true,
-    sampleText: DEFAULT_SAMPLE_TEXT,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Kore,
   },
   {
     name: 'Puck',
@@ -52,7 +74,7 @@ const ALL_GEMINI_VOICES: ServerVoiceInfo[] = [
     sampleFreq: 293.66,
     iconSymbol: '🎤',
     free: true,
-    sampleText: DEFAULT_SAMPLE_TEXT,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Puck,
   },
   {
     name: 'Charon',
@@ -64,7 +86,7 @@ const ALL_GEMINI_VOICES: ServerVoiceInfo[] = [
     sampleFreq: 220.0,
     iconSymbol: '🎙️',
     free: true,
-    sampleText: DEFAULT_SAMPLE_TEXT,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Charon,
   },
   {
     name: 'Fenrir',
@@ -76,7 +98,7 @@ const ALL_GEMINI_VOICES: ServerVoiceInfo[] = [
     sampleFreq: 196.0,
     iconSymbol: '🔊',
     free: true,
-    sampleText: DEFAULT_SAMPLE_TEXT,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Fenrir,
   },
   {
     name: 'Zephyr',
@@ -88,7 +110,7 @@ const ALL_GEMINI_VOICES: ServerVoiceInfo[] = [
     sampleFreq: 246.94,
     iconSymbol: '🎶',
     free: true,
-    sampleText: DEFAULT_SAMPLE_TEXT,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Zephyr,
   },
   {
     name: 'Aoede',
@@ -100,7 +122,7 @@ const ALL_GEMINI_VOICES: ServerVoiceInfo[] = [
     sampleFreq: 329.63,
     iconSymbol: '🎵',
     free: true,
-    sampleText: DEFAULT_SAMPLE_TEXT,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Aoede,
   },
   {
     name: 'Leda',
@@ -112,7 +134,7 @@ const ALL_GEMINI_VOICES: ServerVoiceInfo[] = [
     sampleFreq: 233.08,
     iconSymbol: '🎶',
     free: true,
-    sampleText: DEFAULT_SAMPLE_TEXT,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Leda,
   },
   {
     name: 'Orus',
@@ -124,7 +146,7 @@ const ALL_GEMINI_VOICES: ServerVoiceInfo[] = [
     sampleFreq: 277.18,
     iconSymbol: '🎤',
     free: true,
-    sampleText: DEFAULT_SAMPLE_TEXT,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Orus,
   },
   {
     name: 'Perseus',
@@ -136,7 +158,7 @@ const ALL_GEMINI_VOICES: ServerVoiceInfo[] = [
     sampleFreq: 207.65,
     iconSymbol: '🎙️',
     free: true,
-    sampleText: DEFAULT_SAMPLE_TEXT,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Perseus,
   },
   {
     name: 'Callirrhoe',
@@ -148,7 +170,7 @@ const ALL_GEMINI_VOICES: ServerVoiceInfo[] = [
     sampleFreq: 311.13,
     iconSymbol: '🎵',
     free: true,
-    sampleText: DEFAULT_SAMPLE_TEXT,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Callirrhoe,
   },
   {
     name: 'Autonoë',
@@ -160,7 +182,7 @@ const ALL_GEMINI_VOICES: ServerVoiceInfo[] = [
     sampleFreq: 240.0,
     iconSymbol: '🎶',
     free: true,
-    sampleText: DEFAULT_SAMPLE_TEXT,
+    sampleText: VOICE_SAMPLE_SCRIPTS['Autonoë'],
   },
   {
     name: 'Charis',
@@ -172,7 +194,7 @@ const ALL_GEMINI_VOICES: ServerVoiceInfo[] = [
     sampleFreq: 349.23,
     iconSymbol: '🎵',
     free: true,
-    sampleText: DEFAULT_SAMPLE_TEXT,
+    sampleText: VOICE_SAMPLE_SCRIPTS.Charis,
   },
 ];
 
@@ -183,14 +205,14 @@ const UPSTREAM_VOICE_FALLBACK_MAP: Record<string, string> = {
   Charon: 'Charon',
   Fenrir: 'Fenrir',
   Zephyr: 'Zephyr',
-  Aoede: 'Kore',
-  Leda: 'Zephyr',
-  Orus: 'Puck',
+  Aoede: 'Aoede',
+  Leda: 'Leda',
+  Orus: 'Orus',
   Perseus: 'Charon',
-  Callirrhoe: 'Kore',
-  Autonoë: 'Zephyr',
-  Autonoe: 'Zephyr',
-  Charis: 'Kore',
+  Callirrhoe: 'Callirrhoe',
+  Autonoë: 'Autonoe',
+  Autonoe: 'Autonoe',
+  Charis: 'Aoede',
 };
 
 function normalizeApiVoiceName(voiceName: string): string {
@@ -322,14 +344,71 @@ function smartChunkTextServer(rawText: string, maxChars = SERVER_MAX_CHUNK_CHARS
   return chunks;
 }
 
+function parseSampleRateFromMime(mimeType?: string): number {
+  if (!mimeType) return 24000;
+  const match = mimeType.match(/rate=(\d+)/i);
+  if (match) {
+    const parsed = Number(match[1]);
+    if (Number.isFinite(parsed) && parsed >= 8000 && parsed <= 96000) {
+      return parsed;
+    }
+  }
+  return 24000;
+}
+
+function isRiffWaveBuffer(buf: Buffer): boolean {
+  return (
+    buf.length > 44 &&
+    buf[0] === 0x52 && // 'R'
+    buf[1] === 0x49 && // 'I'
+    buf[2] === 0x46 && // 'F'
+    buf[3] === 0x46 && // 'F'
+    buf[8] === 0x57 && // 'W'
+    buf[9] === 0x41 && // 'A'
+    buf[10] === 0x56 && // 'V'
+    buf[11] === 0x45 // 'E'
+  );
+}
+
+function ensureWavBuffer(rawBuffer: Buffer, mimeType?: string): Buffer {
+  if (isRiffWaveBuffer(rawBuffer)) {
+    return rawBuffer;
+  }
+
+  const pcmBuffer =
+    rawBuffer.length % 2 === 0
+      ? rawBuffer
+      : rawBuffer.subarray(0, rawBuffer.length - 1);
+  const sampleRate = parseSampleRateFromMime(mimeType);
+  const totalPcmLength = pcmBuffer.length;
+
+  const header = Buffer.alloc(44);
+  header.write('RIFF', 0, 'ascii');
+  header.writeUInt32LE(36 + totalPcmLength, 4);
+  header.write('WAVE', 8, 'ascii');
+  header.write('fmt ', 12, 'ascii');
+  header.writeUInt32LE(16, 16);
+  header.writeUInt16LE(1, 20);
+  header.writeUInt16LE(1, 22);
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(sampleRate * 2, 28);
+  header.writeUInt16LE(2, 32);
+  header.writeUInt16LE(16, 34);
+  header.write('data', 36, 'ascii');
+  header.writeUInt32LE(totalPcmLength, 40);
+
+  return Buffer.concat([header, pcmBuffer], 44 + totalPcmLength);
+}
+
 function mergeWavBuffersServer(wavBuffers: Buffer[]): Buffer {
   if (wavBuffers.length === 0) return Buffer.alloc(0);
-  if (wavBuffers.length === 1) return wavBuffers[0];
+  if (wavBuffers.length === 1) return ensureWavBuffer(wavBuffers[0]);
 
   const pcmSlices: Buffer[] = [];
   let totalPcmLength = 0;
 
-  for (const buf of wavBuffers) {
+  for (const rawBuf of wavBuffers) {
+    const buf = ensureWavBuffer(rawBuf);
     if (buf.length <= 44) continue;
     let dataOffset = 44;
     const searchLimit = Math.min(buf.length - 8, 256);
@@ -394,6 +473,12 @@ interface MultiTtsRequest {
 
 type TtsRequestBody = SingleTtsRequest | MultiTtsRequest;
 
+const TTS_MODEL_CANDIDATES = [
+  'gemini-3.8-flash-tts',
+  'gemini-3.8-flash-lite-tts',
+  'gemini-2.5-flash-preview-tts',
+];
+
 async function synthesizeSingleChunkWithRetry(
   ai: GoogleGenAI,
   text: string,
@@ -401,15 +486,13 @@ async function synthesizeSingleChunkWithRetry(
   style?: string,
   maxRetries = 3
 ): Promise<{ audioBase64: string; mimeType: string }> {
-  const model = 'gemini-3.8-flash-tts';
   const voiceInfo = ALL_GEMINI_VOICES.find((v) => v.name === voiceName);
-  const effectiveStyle = style || voiceInfo?.defaultStyle || '';
+  const effectiveStyle = style?.trim() || voiceInfo?.defaultStyle || '';
   const apiVoiceName = normalizeApiVoiceName(voiceName);
 
   let lastError: unknown = null;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    // On attempt 1 try the exact normalized voice name; if upstream rejects the voice name, fallback to acoustic match
     const targetPrebuiltVoice =
       attempt === 1
         ? apiVoiceName
@@ -421,39 +504,23 @@ async function synthesizeSingleChunkWithRetry(
       },
     };
 
-    try {
-      let response;
+    for (const candidateModel of TTS_MODEL_CANDIDATES) {
       try {
-        response = await ai.models.generateContent({
-          model,
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                {
-                  text,
-                  ...(effectiveStyle ? { speechMetadata: { style: effectiveStyle } } : {}),
-                },
-              ],
-            },
-          ],
-          config: {
-            responseModalities: ['AUDIO'],
-            speechConfig: singleSpeechConfig,
-          },
-        });
-      } catch (err: unknown) {
-        const errStr = err instanceof Error ? err.message : String(err);
-        if (errStr.includes('speechMetadata')) {
-          const styledPrompt = effectiveStyle
-            ? `Say in a ${effectiveStyle} tone: ${text}`
-            : text;
+        let response;
+        try {
           response = await ai.models.generateContent({
-            model,
+            model: candidateModel,
             contents: [
               {
                 role: 'user',
-                parts: [{ text: styledPrompt }],
+                parts: [
+                  {
+                    text,
+                    ...(effectiveStyle && candidateModel.startsWith('gemini-3.8')
+                      ? { speechMetadata: { style: effectiveStyle } }
+                      : {}),
+                  },
+                ],
               },
             ],
             config: {
@@ -461,25 +528,59 @@ async function synthesizeSingleChunkWithRetry(
               speechConfig: singleSpeechConfig,
             },
           });
-        } else {
-          throw err;
+        } catch (err: unknown) {
+          const errStr = err instanceof Error ? err.message : String(err);
+          if (errStr.includes('speechMetadata') || errStr.includes('Cannot find field')) {
+            response = await ai.models.generateContent({
+              model: candidateModel,
+              contents: [
+                {
+                  role: 'user',
+                  parts: [{ text }],
+                },
+              ],
+              config: {
+                responseModalities: ['AUDIO'],
+                speechConfig: singleSpeechConfig,
+              },
+            });
+          } else {
+            throw err;
+          }
         }
-      }
 
-      const inlineData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData;
-      if (!inlineData?.data) {
-        throw new Error('Gemini 3.8 Flash TTS did not return audio data.');
-      }
+        const inlineData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+        if (!inlineData?.data) {
+          throw new Error('Gemini TTS did not return audio data.');
+        }
 
-      return {
-        audioBase64: inlineData.data,
-        mimeType: inlineData.mimeType || 'audio/wav',
-      };
-    } catch (err: unknown) {
-      lastError = err;
-      if (attempt < maxRetries) {
-        await new Promise((r) => setTimeout(r, 300 * attempt));
+        const rawBuf = Buffer.from(inlineData.data, 'base64');
+        if (rawBuf.length < 100) {
+          throw new Error('Gemini TTS returned an empty or corrupted audio buffer.');
+        }
+
+        const wavBuf = ensureWavBuffer(rawBuf, inlineData.mimeType);
+        return {
+          audioBase64: wavBuf.toString('base64'),
+          mimeType: 'audio/wav',
+        };
+      } catch (modelErr: unknown) {
+        lastError = modelErr;
+        const msg = modelErr instanceof Error ? modelErr.message : String(modelErr);
+        // If model is not found/supported on this key, try the next candidate model immediately
+        if (
+          msg.includes('404') ||
+          msg.toLowerCase().includes('not found') ||
+          msg.toLowerCase().includes('not supported')
+        ) {
+          continue;
+        }
+        break;
       }
+    }
+
+    if (attempt < maxRetries) {
+      await new Promise((r) => setTimeout(r, 300 * attempt));
     }
   }
 
@@ -583,9 +684,13 @@ async function synthesizeWithGeminiFlashTts(
     if (!inlineData?.data) {
       throw new Error('Gemini 3.8 Flash TTS did not return audio data for this dialogue.');
     }
+    const wavBuf = ensureWavBuffer(
+      Buffer.from(inlineData.data, 'base64'),
+      inlineData.mimeType
+    );
     return {
-      audioBase64: inlineData.data,
-      mimeType: inlineData.mimeType || 'audio/wav',
+      audioBase64: wavBuf.toString('base64'),
+      mimeType: 'audio/wav',
       model,
       chunkCount: 1,
     };
@@ -605,7 +710,7 @@ async function synthesizeWithGeminiFlashTts(
     const singleRes = await synthesizeSingleChunkWithRetry(ai, chunks[0], voiceName, style, 3);
     return {
       audioBase64: singleRes.audioBase64,
-      mimeType: singleRes.mimeType,
+      mimeType: 'audio/wav',
       model,
       chunkCount: 1,
     };

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="voxGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7C3AED" />
+      <stop offset="55%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#EC4899" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#voxGrad)" />
+  <g fill="#FFFFFF">
+    <rect x="216" y="112" width="80" height="156" rx="40" />
+    <path d="M156 236a100 100 0 0 0 200 0h28a128 128 0 0 1-114 127.2V408h46a14 14 0 0 1 0 28H196a14 14 0 0 1 0-28h46v-44.8A128 128 0 0 1 128 236h28z" />
+  </g>
+</svg>

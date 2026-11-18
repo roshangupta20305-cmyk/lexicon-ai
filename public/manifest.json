@@ -1,0 +1,26 @@
+{
+  "name": "Lexicon AI - Professional Voice Studio",
+  "short_name": "Lexicon AI",
+  "description": "Professional unlimited AI voice generation studio with all 12 Gemini voices, smart sentence chunking, and multi-chapter audio production.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0B0F19",
+  "theme_color": "#4F46E5",
+  "orientation": "portrait-primary",
+  "categories": ["productivity", "utilities", "music"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

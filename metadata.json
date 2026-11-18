@@ -1,0 +1,6 @@
+{
+  "name": "VoxCraft Studio — Gemini 3.8 TTS AI Bot & Voice Workbench",
+  "description": "Conversational Text-to-Speech AI Bot, Voice Design Studio, and Dual-Speaker Dialogue Synthesizer powered by Gemini 3.8 Flash TTS.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Pause, Play, RotateCcw, Sparkles, Volume2 } from 'lucide-react';
-import { AudioClipItem, formatDuration } from '../utils/ttsEngine';
+import { AudioClipItem, formatDuration, wavDataUrlToBlobUrl } from '../utils/ttsEngine';
 
 interface PremiumAudioPlayerProps {
   clip: AudioClipItem | null;
@@ -10,6 +10,7 @@ const PLAYBACK_SPEEDS = [0.85, 1.0, 1.15, 1.25, 1.5];
 
 export const PremiumAudioPlayer: React.FC<PremiumAudioPlayerProps> = ({ clip }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const blobUrlRef = useRef<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(clip?.durationSec ?? 0);
@@ -19,9 +20,22 @@ export const PremiumAudioPlayer: React.FC<PremiumAudioPlayerProps> = ({ clip }) 
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(clip?.durationSec ?? 0);
+    if (
+      blobUrlRef.current &&
+      blobUrlRef.current.startsWith('blob:') &&
+      typeof URL !== 'undefined' &&
+      typeof URL.revokeObjectURL === 'function'
+    ) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
     if (audioRef.current && clip) {
       audioRef.current.pause();
-      audioRef.current.src = clip.audioDataUrl;
+      const playableUrl = wavDataUrlToBlobUrl(clip.audioDataUrl);
+      if (playableUrl.startsWith('blob:')) {
+        blobUrlRef.current = playableUrl;
+      }
+      audioRef.current.src = playableUrl;
       audioRef.current.playbackRate = playbackRate;
       audioRef.current.load();
     }
@@ -89,7 +103,7 @@ export const PremiumAudioPlayer: React.FC<PremiumAudioPlayerProps> = ({ clip }) 
 
   const handleDownloadFinalAudio = () => {
     const link = document.createElement('a');
-    link.href = clip.audioDataUrl;
+    link.href = blobUrlRef.current || clip.audioDataUrl;
     const safeTitle =
       clip.title
         .toLowerCase()
@@ -107,7 +121,8 @@ export const PremiumAudioPlayer: React.FC<PremiumAudioPlayerProps> = ({ clip }) 
     <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-5 shadow-2xl backdrop-blur-xl">
       <audio
         ref={audioRef}
-        src={clip.audioDataUrl}
+        playsInline
+        preload="metadata"
         onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
         onLoadedMetadata={(e) => {
           const d = e.currentTarget.duration;

@@ -1280,13 +1280,12 @@ export function filterAudioLibrary(
 }
 
 /**
- * Generates a valid, playable 24kHz 16-bit mono WAV data URL with a soft
- * harmonic vocal-cadence envelope so pre-seeded studio clips and instant
- * voice samples play cleanly in standard HTML5 <audio> elements.
+ * Generates a valid 24kHz 16-bit mono RIFF WAVE data URL containing silent PCM frames
+ * (used exclusively by unit tests for testing WAV header parsing and chunk merging).
  */
 export function createSynthesizedToneWavDataUrl(
   durationSec = 2,
-  baseFreqHz = 240
+  _baseFreqHz = 240
 ): string {
   const sampleRate = 24000;
   const clampedDuration = Math.max(0.5, Math.min(durationSec, 10));
@@ -1315,30 +1314,35 @@ export function createSynthesizedToneWavDataUrl(
   writeString(36, 'data');
   view.setUint32(40, dataBytes, true);
 
-  for (let i = 0; i < numSamples; i++) {
-    const t = i / sampleRate;
-    const fadeIn = Math.min(1, t / 0.08);
-    const fadeOut = Math.min(1, (clampedDuration - t) / 0.15);
-    const syllabicEnvelope =
-      0.55 +
-      0.3 * Math.sin(2 * Math.PI * 3.4 * t) +
-      0.15 * Math.cos(2 * Math.PI * 1.7 * t);
-    const pitchGlide = baseFreqHz * (1 + 0.03 * Math.sin(2 * Math.PI * 1.1 * t));
-    const fundamental = Math.sin(2 * Math.PI * pitchGlide * t);
-    const overtone = 0.35 * Math.sin(2 * Math.PI * pitchGlide * 1.5 * t);
-    const warmThird = 0.2 * Math.sin(2 * Math.PI * pitchGlide * 1.25 * t);
-    const sample =
-      ((fundamental + overtone + warmThird) / 1.55) *
-      fadeIn *
-      fadeOut *
-      syllabicEnvelope *
-      0.65;
-    const intSample = Math.max(-32768, Math.min(32767, Math.round(sample * 32767)));
-    view.setInt16(44 + i * 2, intSample, true);
-  }
-
   const bytes = new Uint8Array(buffer);
   return `data:audio/wav;base64,${uint8ArrayToBase64(bytes)}`;
+}
+
+/**
+ * Converts a base64 WAV string or data URL into a native binary Blob URL (blob:...)
+ * for reliable playback in mobile standalone PWAs (Android WebAPK & iOS Standalone).
+ */
+export function wavDataUrlToBlobUrl(dataUrlOrBase64: string): string {
+  if (!dataUrlOrBase64) return '';
+  if (dataUrlOrBase64.startsWith('blob:')) return dataUrlOrBase64;
+  try {
+    const normalizedB64 = ensureWavBase64(dataUrlOrBase64);
+    if (
+      typeof window !== 'undefined' &&
+      typeof Blob !== 'undefined' &&
+      typeof URL !== 'undefined' &&
+      typeof URL.createObjectURL === 'function'
+    ) {
+      const wavBytes = base64ToUint8Array(normalizedB64);
+      const blob = new Blob([wavBytes.buffer as ArrayBuffer], {
+        type: 'audio/wav',
+      });
+      return URL.createObjectURL(blob);
+    }
+    return `data:audio/wav;base64,${normalizedB64}`;
+  } catch {
+    return dataUrlOrBase64;
+  }
 }
 
 // In-memory cache of synthesized voice sample audio data URLs
@@ -1392,7 +1396,12 @@ export async function getVoiceSampleAudioDataUrl(
         try {
           const response = await fetch('/api/tts', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            cache: 'no-store',
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              Pragma: 'no-cache',
+            },
             body: JSON.stringify({
               mode: 'single',
               text: effectiveScript,

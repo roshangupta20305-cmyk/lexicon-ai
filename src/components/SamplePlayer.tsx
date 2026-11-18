@@ -4,6 +4,7 @@ import {
   VoiceName,
   getVoiceSampleAudioDataUrl,
   getVoiceSampleText,
+  wavDataUrlToBlobUrl,
 } from '../utils/ttsEngine';
 
 // Singleton registry ensuring only ONE voice sample plays at a time across the entire app
@@ -38,6 +39,7 @@ export const SamplePlayer: React.FC<SamplePlayerProps> = ({
     `sample-${voiceName}-${Math.random().toString(36).slice(2, 8)}`
   );
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const activeBlobUrlRef = useRef<string | null>(null);
   const toastTimerRef = useRef<number | null>(null);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -58,6 +60,18 @@ export const SamplePlayer: React.FC<SamplePlayerProps> = ({
     toastTimerRef.current = window.setTimeout(() => {
       setToastError(null);
     }, 4000);
+  };
+
+  const revokeActiveBlobUrl = () => {
+    if (
+      activeBlobUrlRef.current &&
+      activeBlobUrlRef.current.startsWith('blob:') &&
+      typeof URL !== 'undefined' &&
+      typeof URL.revokeObjectURL === 'function'
+    ) {
+      URL.revokeObjectURL(activeBlobUrlRef.current);
+      activeBlobUrlRef.current = null;
+    }
   };
 
   const stopThisPlayer = () => {
@@ -83,6 +97,7 @@ export const SamplePlayer: React.FC<SamplePlayerProps> = ({
       if (audioRef.current) {
         audioRef.current.pause();
       }
+      revokeActiveBlobUrl();
     };
   }, []);
 
@@ -109,6 +124,17 @@ export const SamplePlayer: React.FC<SamplePlayerProps> = ({
     setIsLoading(true);
     setProgressPct(0);
 
+    const el = audioRef.current;
+    // Synchronously prime the <audio> element inside the tap gesture for mobile standalone PWAs
+    if (el) {
+      try {
+        el.pause();
+        el.load();
+      } catch {
+        // Ignore
+      }
+    }
+
     try {
       const audioDataUrl = await getVoiceSampleAudioDataUrl(
         voiceName,
@@ -119,13 +145,19 @@ export const SamplePlayer: React.FC<SamplePlayerProps> = ({
         return;
       }
 
-      const el = audioRef.current;
       if (!el) {
         setIsLoading(false);
         return;
       }
 
-      el.src = audioDataUrl;
+      // Convert base64 WAV to a native binary Blob URL for mobile standalone PWA compatibility
+      revokeActiveBlobUrl();
+      const playableUrl = wavDataUrlToBlobUrl(audioDataUrl);
+      if (playableUrl.startsWith('blob:')) {
+        activeBlobUrlRef.current = playableUrl;
+      }
+
+      el.src = playableUrl;
       el.playbackRate = 1.0;
       el.currentTime = 0;
       el.load();
@@ -178,6 +210,7 @@ export const SamplePlayer: React.FC<SamplePlayerProps> = ({
       <audio
         ref={audioRef}
         preload="none"
+        playsInline
         onTimeUpdate={(e) => {
           const d = e.currentTarget.duration;
           if (Number.isFinite(d) && d > 0) {

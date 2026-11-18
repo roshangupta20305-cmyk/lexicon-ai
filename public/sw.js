@@ -1,5 +1,4 @@
-const SHELL_CACHE = 'lexicon-ai-shell-v2';
-const AUDIO_CACHE = 'lexicon-ai-audio-v2';
+const CACHE_NAME = 'lexicon-v2-fix-samples';
 
 const APP_SHELL_ASSETS = [
   '/',
@@ -11,11 +10,14 @@ const APP_SHELL_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches
-      .open(SHELL_CACHE)
+      .open(CACHE_NAME)
       .then((cache) => cache.addAll(APP_SHELL_ASSETS))
-      .then(() => self.skipWaiting())
+      .catch(() => {
+        // Ignore individual asset pre-cache errors in dev mode
+      })
   );
 });
 
@@ -23,50 +25,52 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) =>
+      .then((cacheNames) =>
         Promise.all(
-          keys
-            .filter((key) => key !== SHELL_CACHE && key !== AUDIO_CACHE)
-            .map((key) => caches.delete(key))
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME) {
+              return caches.delete(cacheName);
+            }
+            return Promise.resolve(false);
+          })
         )
       )
       .then(() => self.clients.claim())
   );
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+
+  // Never intercept POST/PUT/DELETE requests or any /api/* routes
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith('/api/')) return;
 
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const clone = response.clone();
-          caches.open(AUDIO_CACHE).then((cache) => cache.put(request, clone));
-          return response;
-        })
-        .catch(() => caches.match(request))
-    );
-    return;
-  }
-
+  // Network-First strategy so installed PWAs always run the latest code when online
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      const networkFetch = fetch(request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const clone = networkResponse.clone();
-            caches.open(SHELL_CACHE).then((cache) => cache.put(request, clone));
-          }
-          return networkResponse;
-        })
-        .catch(() => cachedResponse);
-
-      return cachedResponse || networkFetch;
-    })
+    fetch(request, { cache: 'no-cache' })
+      .then((networkResponse) => {
+        if (
+          networkResponse &&
+          networkResponse.status === 200 &&
+          networkResponse.type === 'basic'
+        ) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, responseClone);
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => caches.match(request))
   );
 });
